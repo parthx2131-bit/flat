@@ -1,0 +1,10 @@
+{
+  "name": "medping-caregiver-widget",
+  "version": "1.0.0",
+  "description": "MedPing — NFC-powered elder care medication tracking widget",
+  "scripts": {
+    "start": "node local-server.js",
+    "dev": "node local-server.js"
+  },
+  "license": "ISC"
+}

@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MedPing — Minimal NFC Elder Care Medication Tracking Widget</title>
+  
+  <!-- Typography: DM Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------
+       MEDPING DESIGN SYSTEM (MINIMAL IPHONE WIDGET)
+       - Preserved clinical forest green for taken
+       - Replaced all red with neutral iOS calm gray
+       - Stripped out visual clutter; necessary & minimal information only
+       - Authentic frosted glass on Apple vibrant mesh gradient wallpaper
+       ------------------------------------------------------------- */
+    :root {
+      --bg-canvas: #CBD3CE;
+      
+      /* Apple Frosted Glass Tokens */
+      --widget-glass-bg: rgba(255, 255, 255, 0.75);
+      --widget-glass-border: rgba(255, 255, 255, 0.88);
+      --widget-glass-shadow: 0 16px 36px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+      
+      /* Primary Healthcare Accent (Muted Teal) */
+      --primary: #2A8C82;
+      --primary-hover: #22756D;
+      --primary-light: #E7F3F1;
+      --primary-border: #9DD0CB;
+
+      /* Taken Adherence (Preserved Forest Green) */
+      --status-taken: #2E7D52;
+      --status-taken-bg: #EAF4EE;
+      --status-taken-border: #B7DEC6;
+
+      /* Missing / Pending Tablet (Calm Neutral Gray - NO RED) */
+      --status-gray: #636366;
+      --status-gray-light: #8E8E93;
+      --status-gray-bg: rgba(142, 142, 147, 0.12);
+      --status-gray-border: rgba(142, 142, 147, 0.28);
+      --status-gray-pill: rgba(142, 142, 147, 0.14);
+
+      /* Typography & Neutral */
+      --text-main: #1C2320;
+      --text-secondary: #535B56;
+      --text-muted: #8E8E93;
+
+      --font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --radius-widget: 30px;
+      --radius-pillbox: 14px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      background-image: 
+        radial-gradient(circle at 10% 20%, #DFE5E1 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, #C4CCC7 0%, transparent 45%);
+      font-family: var(--font-family);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+      user-select: none;
+    }
+
+    /* -------------------------------------------------------------
+       CAREGIVER COMPANION HELPER BAR (WARM, CLEAN & WELCOMING)
+       Replaces the overwhelming developer-style control box
+       ------------------------------------------------------------- */
+    .caregiver-companion-bar {
+      width: 100%;
+      max-width: 390px;
+      background: #FFFFFF;
+      border: 1px solid #E2E1DC;
+      border-radius: 16px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      z-index: 100;
+    }
+
+    .companion-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .companion-live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2E7D52;
+    }
+
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2E7D52;
+      box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(46, 125, 82, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(46, 125, 82, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 125, 82, 0); }
+    }
+
+    .companion-quick-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .companion-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+
+    .companion-btn.primary {
+      background: #2A8C82;
+      color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(42, 140, 130, 0.25);
+    }
+
+    .companion-btn.primary:hover {
+      background: #22756D;
+    }
+
+    .companion-btn.primary.active-sim {
+      background: #2E7D52;
+    }
+
+    .companion-btn.secondary {
+      background: #F4F3F0;
+      color: #39423D;
+      border: 1px solid #E5E4E0;
+    }
+
+    .companion-btn.secondary:hover {
+      background: #EAE9E4;
+    }
+
+    .companion-btn.icon-btn {
+      flex: 0 0 auto;
+      padding: 7px;
+      color: #636366;
+    }
+
+    /* -------------------------------------------------------------
+       STANDARD IPHONE SCREEN & CHASSIS (AUTHENTIC IPHONE 15 / 16)
+       - Standard 390px x 844px display
+       - Sleek Titanium outer bezel with rounded corners
+       - Dynamic Island pill at the top
+       - Standard iOS status bar flanking the Dynamic Island
+       - Standard Home Indicator bar at the bottom
+       ------------------------------------------------------------- */
+    .phone-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 390px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-container {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      max-height: calc(100vh - 85px);
+      /* Basic iPhone Stock Wallpaper: Classic iOS Twilight Navy */
+      background-color: #0A1128;
+      background-image: 
+        radial-gradient(circle at 82% 16%, rgba(59, 130, 246, 0.45) 0%, transparent 48%),
+        radial-gradient(circle at 18% 38%, rgba(37, 99, 235, 0.40) 0%, transparent 52%),
+        radial-gradient(circle at 70% 75%, rgba(79, 70, 229, 0.35) 0%, transparent 55%),
+        radial-gradient(circle at 25% 82%, rgba(14, 165, 233, 0.28) 0%, transparent 48%),
+        linear-gradient(180deg, #070B16 0%, #0D162B 30%, #111F3D 60%, #080D1A 100%);
+      border: none !important;
+      border-radius: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.3);
+      transition: background 0.3s ease;
+    }
+
+    /* Standard iOS Status Bar (Clean, No Notch) */
+    .home-status-bar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 26px 0 26px;
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 40;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .status-time {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .battery-icon-pill {
+      display: flex;
+      align-items: center;
+      gap: 1.5px;
+    }
+
+    .battery-shell {
+      width: 22px;
+      height: 11.5px;
+      border: 1.5px solid #FFFFFF;
+      border-radius: 3.5px;
+      padding: 1.5px;
+      display: flex;
+      align-items: center;
+    }
+
+    .battery-fill {
+      width: 78%;
+      height: 100%;
+      background: #34C759;
+      border-radius: 1.5px;
+    }
+
+    .battery-nipple {
+      width: 1.5px;
+      height: 4px;
+      background: #FFFFFF;
+      border-radius: 0 1px 1px 0;
+    }
+
+    /* Standard iPhone Home Indicator */
+    .home-indicator-bar {
+      width: 134px;
+      height: 5px;
+      background: #FFFFFF;
+      opacity: 0.65;
+      border-radius: 100px;
+      margin: 10px auto 6px auto;
+      flex-shrink: 0;
+    }
+
+    /* Responsive scaling on actual phone viewports */
+    @media (max-width: 500px) {
+      body {
+        padding: 6px;
+      }
+
+      .caregiver-companion-bar {
+        max-width: 100%;
+      }
+
+      .phone-wrapper {
+        max-width: 100%;
+      }
+
+      .phone-container {
+        border-radius: 40px;
+        height: auto;
+        min-height: calc(100vh - 80px);
+        max-height: none;
+      }
+    }
+
+    /* Basic iPhone Wallpaper Presets */
+    .phone-container.wp-navy {
+      background-color: #0A1128;
+      background-image: 
+        radial-gradient(circle at 82% 16%, rgba(59, 130, 246, 0.45) 0%, transparent 48%),
+        radial-gradient(circle at 18% 38%, rgba(37, 99, 235, 0.40) 0%, transparent 52%),
+        radial-gradient(circle at 70% 75%, rgba(79, 70, 229, 0.35) 0%, transparent 55%),
+        radial-gradient(circle at 25% 82%, rgba(14, 165, 233, 0.28) 0%, transparent 48%),
+        linear-gradient(180deg, #070B16 0%, #0D162B 30%, #111F3D 60%, #080D1A 100%);
+    }
+
+    .phone-container.wp-astronomy {
+      background-color: #05070D;
+      background-image: 
+        radial-gradient(circle at 50% 12%, rgba(96, 165, 250, 0.32) 0%, transparent 48%),
+        radial-gradient(circle at 80% 45%, rgba(56, 189, 248, 0.20) 0%, transparent 45%),
+        radial-gradient(circle at 20% 75%, rgba(129, 140, 248, 0.22) 0%, transparent 50%),
+        linear-gradient(180deg, #05070E 0%, #0A1120 45%, #030408 100%);
+    }
+
+    .phone-container.wp-titanium {
+      background-color: #121417;
+      background-image:
+        radial-gradient(circle at 50% 20%, rgba(100, 116, 139, 0.32) 0%, transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(71, 85, 105, 0.38) 0%, transparent 50%),
+        linear-gradient(180deg, #1E232B 0%, #12151A 50%, #0A0C0E 100%);
+    }
+
+    .phone-container.wp-classic-blue {
+      background-color: #0A192F;
+      background-image:
+        radial-gradient(circle at 50% 5%, rgba(59, 130, 246, 0.48) 0%, transparent 50%),
+        radial-gradient(circle at 88% 60%, rgba(29, 78, 216, 0.38) 0%, transparent 50%),
+        linear-gradient(180deg, #0C2B54 0%, #07162C 65%, #020712 100%);
+    }
+
+    /* Status Bar (No notch obstruction) */
+    .home-status-bar {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(10px, env(safe-area-inset-top)) 24px 0 24px;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 40;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .status-icons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Home Screen Content */
+    .home-screen-content {
+      flex: 1;
+      padding: 12px 18px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+
+    .home-screen-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Calendar & Date Lockup */
+    .home-date-header {
+      color: #FFFFFF;
+      padding: 6px 4px 14px 4px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+    }
+
+    .home-date-day {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .home-date-main {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+
+    /* -------------------------------------------------------------
+       THE MEDPING FROSTED GLASS WIDGET (MINIMAL & CRISP)
+       ------------------------------------------------------------- */
+    .medping-widget-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .medping-widget {
+      width: 100%;
+      background: var(--widget-glass-bg);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border-radius: var(--radius-widget);
+      padding: 16px 16px 14px 16px;
+      box-shadow: var(--widget-glass-shadow);
+      border: 1.5px solid var(--widget-glass-border);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .medping-widget.widget-compact {
+      padding: 12px 14px;
+    }
+
+    /* Minimal Header: Patient Name & Ratio */
+    .widget-header-minimal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+
+    .widget-brand-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .widget-pill-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      background: var(--primary);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .widget-patient-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .patient-relation-tag {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--primary);
+      background: rgba(42, 140, 130, 0.12);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .widget-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .widget-ratio-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #2E7D52;
+      background: #EAF4EE;
+      border: 1px solid #B7DEC6;
+      padding: 2.5px 8px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Subtle Adherence Progress Track */
+    .widget-progress-row {
+      margin-bottom: 11px;
+      padding: 0 2px;
+    }
+
+    .adherence-track {
+      width: 100%;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .adherence-fill {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, #2E7D52, #38A169);
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
+    .slide-nav-arrow {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .slide-nav-arrow:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.12);
+      color: var(--text-main);
+      transform: scale(1.06);
+    }
+
+    .slide-nav-arrow:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Carousel Container with Mobile Touch Sliding */
+    .widget-carousel-viewport {
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+      touch-action: pan-y; /* Crucial for phones: allow vertical scroll while capturing horizontal swipe */
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: grab;
+      border-radius: 12px;
+    }
+
+    .widget-carousel-viewport.is-dragging {
+      cursor: grabbing;
+    }
+
+    .widget-carousel-track {
+      display: flex;
+      width: 300%;
+      transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
+      will-change: transform;
+    }
+
+    .widget-slide {
+      width: 33.3333%;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* -------------------------------------------------------------
+       SLIDE 1: CLEAN PILLBOX COMPARTMENTS (MINIMAL INFORMATION)
+       - Green for taken
+       - Calm neutral Gray for missing/pending (NO RED)
+       - Streamlined, readable layout without clutter
+       ------------------------------------------------------------- */
+    .pillbox-compartments-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .pillbox-cell {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius-pillbox);
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .pillbox-cell:hover {
+      transform: translateY(-1px);
+    }
+
+    /* Cell States: Taken = Green | Missing/Pending = Gray */
+    .pillbox-cell.cell-taken {
+      background: rgba(234, 244, 238, 0.92);
+      border-color: var(--status-taken-border);
+      border-bottom: 2.5px solid var(--status-taken);
+    }
+
+    .pillbox-cell.cell-gray {
+      background: rgba(245, 245, 247, 0.88);
+      border-color: var(--status-gray-border);
+      border-bottom: 2.5px solid var(--status-gray-light);
+    }
+
+    .cell-time {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .cell-pill-graphic {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 1px 0;
+    }
+
+    .cell-pill-graphic.taken {
+      background: var(--status-taken-bg);
+      color: var(--status-taken);
+    }
+
+    /* Missing tablet signal: Calm Gray (NO RED) */
+    .cell-pill-graphic.gray {
+      background: var(--status-gray-bg);
+      color: var(--status-gray-light);
+    }
+
+    .cell-med-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.1;
+      max-width: 66px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cell-tap-status {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .cell-tap-status.taken {
+      color: var(--status-taken);
+      background: #D9EFE2;
+    }
+
+    .cell-tap-status.gray {
+      color: var(--status-gray);
+      background: var(--status-gray-pill);
+    }
+
+    /* Minimal Footer Line */
+    .widget-minimal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 6px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .footer-action-link {
+      color: var(--primary);
+      font-weight: 600;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    /* -------------------------------------------------------------
+       SLIDE 2: KITCHEN NFC BOX (MINIMAL)
+       ------------------------------------------------------------- */
+    .mini-box-card {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius-pillbox);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .mini-box-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .mini-box-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .mini-tag-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--status-taken);
+      background: var(--status-taken-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .mini-box-info {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .btn-quick-tap {
+      width: 100%;
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      padding: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-quick-tap:hover {
+      background: var(--primary-light);
+    }
+
+    /* -------------------------------------------------------------
+       SLIDE 3: MEDICAL CARE & DOCTOR (MINIMAL)
+       ------------------------------------------------------------- */
+    .mini-doc-card {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      border-radius: var(--radius-pillbox);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .mini-doc-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .mini-doc-sub {
+      font-size: 11px;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .mini-rx-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .mini-rx-pill {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* Pagination Dots */
+    .widget-pagination-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding-top: 8px;
+    }
+
+    .widget-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .widget-dot.active {
+      background: var(--primary);
+      width: 14px;
+      border-radius: 3px;
+    }
+
+    /* Concise Tip Embedded Directly Within Widget */
+    .widget-inner-tip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 7px;
+      padding: 5px 36px 0 36px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      letter-spacing: 0.1px;
+      transition: color 0.15s ease;
+      text-align: center;
+    }
+
+    .widget-inner-tip:hover {
+      color: var(--primary);
+    }
+
+    /* Bottom Right Corner Emergency Contact Button */
+    .widget-corner-contact-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 20;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .widget-corner-contact-btn:hover {
+      background: #E8F4F2;
+      color: var(--primary);
+      border-color: var(--primary-border);
+      transform: scale(1.08);
+    }
+
+    .widget-corner-contact-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* "How It Works" Friendly Explainer Modal */
+    .how-it-works-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 54px;
+    }
+
+    .how-it-works-overlay.open {
+      display: flex;
+    }
+
+    .how-card {
+      background: #FFFFFF;
+      border-radius: 24px;
+      padding: 22px 20px;
+      width: 100%;
+      max-width: 330px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .how-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .how-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .how-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .how-close-btn {
+      background: #F0EFEA;
+      border: none;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .how-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .how-step-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .how-step-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #EAF4EE;
+      color: var(--status-taken);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .how-step-content strong {
+      display: block;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .how-step-content p {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    .how-got-it-btn {
+      background: var(--primary);
+      color: #FFF;
+      border: none;
+      padding: 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+    }
+
+    .how-got-it-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Home Screen Label */
+    .widget-ios-label {
+      text-align: center;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.65);
+      letter-spacing: 0.2px;
+    }
+
+    /* -------------------------------------------------------------
+       HOME SCREEN APPS & BOTTOM DOCK
+       ------------------------------------------------------------- */
+    .home-app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px 12px;
+      margin-top: 10px;
+      padding: 0 6px;
+    }
+
+    .home-app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .app-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .app-icon.meds {
+      background: linear-gradient(135deg, #2A8C82, #185A53);
+      color: #FFF;
+    }
+
+    .app-icon.health {
+      background: linear-gradient(135deg, #FF6584, #D92348);
+      color: #FFF;
+    }
+
+    .app-icon.messages {
+      background: linear-gradient(135deg, #48BB78, #276749);
+      color: #FFF;
+    }
+
+    .app-icon.contacts {
+      background: linear-gradient(135deg, #ED8936, #C05621);
+      color: #FFF;
+    }
+
+    .app-name {
+      font-size: 11px;
+      color: #FFFFFF;
+      font-weight: 500;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Bottom Dock */
+    .home-dock {
+      margin-top: auto;
+      background: rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border-radius: 28px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .dock-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .dock-icon.phone { background: linear-gradient(135deg, #48BB78, #2F855A); }
+    .dock-icon.safari { background: linear-gradient(135deg, #4299E1, #2B6CB0); }
+    .dock-icon.whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); }
+    .dock-icon.camera { background: linear-gradient(135deg, #718096, #4A5568); }
+
+    .home-bar {
+      width: 124px;
+      height: 4px;
+      background: #FFFFFF;
+      border-radius: 2px;
+      margin: 8px auto 6px auto;
+      opacity: 0.85;
+    }
+
+    /* -------------------------------------------------------------
+       EXPANDED DETAIL MODAL SHEET
+       ------------------------------------------------------------- */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(5px);
+      z-index: 200;
+      display: none;
+      align-items: flex-end;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .detail-sheet {
+      background: #F8F7F4;
+      width: 100%;
+      height: 88%;
+      border-top-left-radius: 26px;
+      border-top-right-radius: 26px;
+      padding: 18px 20px 24px 20px;
+      overflow-y: auto;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+      animation: sheetUp 0.24s cubic-bezier(0.2, 0.9, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: #D1CFCA;
+      border-radius: 2px;
+      margin: 0 auto 12px auto;
+    }
+
+    .sheet-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .sheet-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .sheet-close-btn {
+      background: #E8E6E1;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .sheet-tabs {
+      display: flex;
+      background: #E8E6E1;
+      padding: 3px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      gap: 3px;
+    }
+
+    .sheet-tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 6px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .sheet-tab-btn.active {
+      background: #FFF;
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .sheet-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sheet-panel.active {
+      display: flex;
+    }
+
+    .panel-card {
+      background: #FFFFFF;
+      border: 1px solid #E0DEDB;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+
+    .panel-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    /* Caregiver Stakeholders & Ping Styles */
+    .contacts-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #F0EFEB;
+    }
+
+    .btn-ping-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 14px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 3px rgba(46, 125, 82, 0.2);
+      flex-shrink: 0;
+    }
+
+    .btn-ping-all:hover {
+      background: #256643;
+      transform: translateY(-1px);
+    }
+
+    .btn-ping-all:active {
+      transform: scale(0.96);
+    }
+
+    .contact-row-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+
+    .contact-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .contact-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .contact-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .contact-role-tag {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #F2F2F7;
+      color: #636366;
+    }
+
+    .contact-phone {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .contact-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .btn-ping-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 12px;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-ping-action:hover {
+      background: #256643;
+      transform: translateY(-0.5px);
+    }
+
+    .btn-ping-action:active {
+      transform: scale(0.95);
+    }
+
+    .btn-call-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #F2F2F7;
+      color: var(--text-main);
+      border: 1px solid #E5E5EA;
+      border-radius: 12px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-call-action:hover {
+      background: #E5E5EA;
+    }
+
+    /* Toast */
+    .toast-popup {
+      position: absolute;
+      top: 50px;
+      left: 20px;
+      right: 20px;
+      background: #1C2320;
+      color: #FFF;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      z-index: 300;
+      transform: translateY(-80px);
+      transition: transform 0.25s ease;
+      pointer-events: none;
+    }
+
+    .toast-popup.visible {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Caregiver Companion Bar (Warm, Simple, Non-overwhelming) -->
+  <div class="caregiver-companion-bar">
+    <div class="companion-status-row">
+      <div class="companion-live-indicator">
+        <span class="live-pulse-dot"></span>
+        <span>Caregiver Live Sync Active</span>
+      </div>
+      <div style="font-size: 11px; color: #8E8E93;">Leela (Mom)</div>
+    </div>
+    <div class="companion-quick-actions">
+      <button class="companion-btn primary" id="simTapAmlodipineBtn" onclick="simulateAmlodipineTap()" title="Simulate physical NFC tap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Simulate NFC Tap (Mom takes pill)</span>
+      </button>
+      <button class="companion-btn secondary" onclick="openHowItWorksModal()" title="View quick guide">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>How It Works</span>
+      </button>
+      <button class="companion-btn secondary icon-btn" onclick="resetPrototypeScenario()" title="Reset morning scenario">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Standard iPhone 15 / 16 Screen Chassis -->
+  <!-- Standard iPhone Screen (No Border, No Notch) -->
+  <div class="phone-wrapper">
+    <div class="phone-container" id="phoneContainer">
+
+      <!-- Toast Notification -->
+      <div class="toast-popup" id="globalToast">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2E7D52" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="toastMessage">NFC tag read confirmed</span>
+      </div>
+
+      <!-- Clean iOS Status Bar (No Notch) -->
+      <div class="home-status-bar">
+        <span class="status-time">9:47</span>
+        <div class="status-icons">
+          <svg width="15" height="11" viewBox="0 0 18 12" fill="none">
+            <rect x="0" y="9" width="3" height="3" rx="0.75" fill="#FFF"/>
+            <rect x="4.5" y="6" width="3" height="6" rx="0.75" fill="#FFF"/>
+            <rect x="9" y="3" width="3" height="9" rx="0.75" fill="#FFF"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="0.75" fill="#FFF"/>
+          </svg>
+          <svg width="14" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <div class="battery-icon-pill">
+            <div class="battery-shell">
+              <div class="battery-fill" id="statusBarBatteryFill"></div>
+            </div>
+            <div class="battery-nipple"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Home Screen Body -->
+      <div class="home-screen-content">
+
+        <!-- Date Header on Wallpaper -->
+        <div class="home-date-header">
+          <div class="home-date-day">Tuesday, 27 October</div>
+          <div class="home-date-main">9:47 AM</div>
+        </div>
+
+        <!-- =========================================================
+             MEDPING FROSTED GLASS WIDGET (CRISP, CALM & INTUITIVE)
+             - Clear patient header with Mom relation
+             - Reassuring adherence progress track
+             - Forest green for taken, Calm Gray for pending (NO RED)
+             - Effortless swipe / slide support
+             ========================================================= -->
+        <div class="medping-widget-wrapper">
+          <div class="medping-widget" id="medpingWidget">
+
+            <!-- Crisp Minimal Header -->
+            <div class="widget-header-minimal">
+              <div class="widget-brand-left">
+                <div class="widget-pill-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                </div>
+                <div class="widget-patient-title">
+                  <span>Leela</span>
+                  <span class="patient-relation-tag">Mom</span>
+                </div>
+              </div>
+              <div class="widget-header-right">
+                <span class="widget-ratio-badge" id="widgetRatioBadge">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>2 of 4 taken</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Adherence Progress Track -->
+            <div class="widget-progress-row">
+              <div class="adherence-track">
+                <div class="adherence-fill" id="adherenceProgressFill"></div>
+              </div>
+            </div>
+
+            <!-- Carousel Viewport: 3 Concise Screens -->
+            <div class="widget-carousel-viewport">
+              <div class="widget-carousel-track" id="widgetCarouselTrack">
+
+              <!-- =====================================================
+                   SLIDE 1: STREAMLINED PILLBOX COMPARTMENTS
+                   Green for taken, Calm Gray for missing/pending
+                   ===================================================== -->
+              <div class="widget-slide">
+                <div class="pillbox-compartments-grid">
+                  
+                  <!-- 1: Pantoprazole (TAKEN - Green) -->
+                  <div class="pillbox-cell cell-taken" onclick="openExpandedModal('meds', 'pantoprazole')">
+                    <span class="cell-time">7:30 AM</span>
+                    <div class="cell-pill-graphic taken">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="cell-med-label">Pantoprazole</div>
+                    <span class="cell-tap-status taken">7:51 AM</span>
+                  </div>
+
+                  <!-- 2: Metformin (TAKEN - Green) -->
+                  <div class="pillbox-cell cell-taken" onclick="openExpandedModal('meds', 'metformin')">
+                    <span class="cell-time">8:00 AM</span>
+                    <div class="cell-pill-graphic taken">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="cell-med-label">Metformin</div>
+                    <span class="cell-tap-status taken">8:22 AM</span>
+                  </div>
+
+                  <!-- 3: Amlodipine (MISSING / PENDING - Calm Gray, NO RED) -->
+                  <div class="pillbox-cell cell-gray" id="widgetAmlodipineCell" onclick="openExpandedModal('meds', 'amlodipine')">
+                    <span class="cell-time">8:00 AM</span>
+                    <div class="cell-pill-graphic gray" id="widgetAmlodipineGraphic">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <div class="cell-med-label">Amlodipine</div>
+                    <span class="cell-tap-status gray" id="widgetAmlodipineStatus">Pending</span>
+                  </div>
+
+                  <!-- 4: Atorvastatin (NIGHT - Calm Gray) -->
+                  <div class="pillbox-cell cell-gray" onclick="openExpandedModal('meds', 'atorvastatin')">
+                    <span class="cell-time">9:00 PM</span>
+                    <div class="cell-pill-graphic gray">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                    </div>
+                    <div class="cell-med-label">Atorvastatin</div>
+                    <span class="cell-tap-status gray">Night</span>
+                  </div>
+
+                </div>
+
+                <!-- Minimal Clean Footer Line -->
+                <div class="widget-minimal-footer">
+                  <span id="footerNextText">Next: Atorvastatin at 9:00 PM</span>
+                  <button class="footer-action-link" onclick="openExpandedModal('overview')">
+                    <span>Details</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- =====================================================
+                   SLIDE 2: KITCHEN NFC BOX (MINIMAL)
+                   ===================================================== -->
+              <div class="widget-slide">
+                <div class="mini-box-card">
+                  <div class="mini-box-row">
+                    <span class="mini-box-name">Kitchen Medicine Box</span>
+                    <span class="mini-tag-badge">ACTIVE</span>
+                  </div>
+                  <div class="mini-box-info" id="radarLastTap">
+                    Last logged: 8:22 AM · Metformin
+                  </div>
+                  <button class="btn-quick-tap" onclick="simulateAmlodipineTap()">
+                    Simulate NFC Tap (Amlodipine)
+                  </button>
+                </div>
+
+                <div class="widget-minimal-footer">
+                  <span>Dining table box</span>
+                  <button class="footer-action-link" onclick="openExpandedModal('boxes')">
+                    <span>Manage</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- =====================================================
+                   SLIDE 3: MEDICAL CARE & DOCTOR (MINIMAL)
+                   ===================================================== -->
+              <div class="widget-slide">
+                <div class="mini-doc-card">
+                  <div class="mini-doc-name">Dr. Ravi Shankar</div>
+                  <div class="mini-doc-sub">Geriatrician · Manipal Hospital</div>
+                  <div class="mini-rx-list">
+                    <span class="mini-rx-pill">Metformin (22)</span>
+                    <span class="mini-rx-pill">Amlodipine (6)</span>
+                    <span class="mini-rx-pill">Pantoprazole (30)</span>
+                    <span class="mini-rx-pill">Atorvastatin (18)</span>
+                  </div>
+                </div>
+
+                <div class="widget-minimal-footer">
+                  <span>Caregivers & Rx</span>
+                  <button class="footer-action-link" onclick="openExpandedModal('contacts')">
+                    <span>Contacts & Ping</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Minimal 3 Pagination Dots -->
+          <div class="widget-pagination-row">
+            <div class="widget-dot active" onclick="goToWidgetSlide(0)"></div>
+            <div class="widget-dot" onclick="goToWidgetSlide(1)"></div>
+            <div class="widget-dot" onclick="goToWidgetSlide(2)"></div>
+          </div>
+
+          <!-- Concise Tip Included Directly Inside Widget -->
+          <div class="widget-inner-tip" onclick="openExpandedModal('meds')">
+            <span>💡 Tap any tablet to see history</span>
+          </div>
+
+          <!-- Bottom Right Corner Emergency Contact Icon -->
+          <button class="widget-corner-contact-btn" id="widgetCornerContactBtn" onclick="openExpandedModal('contacts')" title="Caregiver Contacts & Emergency Ping" aria-label="Caregiver Contacts and Emergency Ping">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </button>
+
+        </div>
+
+        <div class="widget-ios-label">MedPing</div>
+      </div>
+
+      <!-- Home Screen Apps -->
+      <div class="home-app-grid">
+        <div class="home-app-item" onclick="openExpandedModal('overview')">
+          <div class="app-icon meds">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+          </div>
+          <span class="app-name">MedPing</span>
+        </div>
+
+        <div class="home-app-item" onclick="openExpandedModal('meds')">
+          <div class="app-icon health">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          </div>
+          <span class="app-name">Health</span>
+        </div>
+
+        <div class="home-app-item" onclick="openExpandedModal('contacts')">
+          <div class="app-icon messages">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span class="app-name">Messages</span>
+        </div>
+
+        <div class="home-app-item" onclick="openExpandedModal('contacts')">
+          <div class="app-icon contacts">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <span class="app-name">Contacts</span>
+        </div>
+      </div>
+
+      <!-- Bottom Dock -->
+      <div class="home-dock">
+        <div class="dock-icon phone" onclick="openExpandedModal('contacts')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div class="dock-icon safari" onclick="openExpandedModal('overview')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+        </div>
+        <div class="dock-icon whatsapp" onclick="openExpandedModal('contacts')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        </div>
+        <div class="dock-icon camera" onclick="showToast('Camera NFC Scanner Active')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+      </div>
+
+      <!-- Standard iPhone Home Indicator Bar -->
+      <div class="home-indicator-bar"></div>
+
+    </div><!-- /home-screen-content -->
+
+    <!-- =========================================================
+         EXPANDED DETAIL MODAL SHEET
+         ========================================================= -->
+    <div class="modal-overlay" id="expandedModal" onclick="closeModalOnOverlay(event)">
+      <div class="detail-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header-row">
+          <div>
+            <div class="sheet-title">MedPing Details</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Leela, 72 · Bengaluru</div>
+          </div>
+          <button class="sheet-close-btn" onclick="closeExpandedModal()">&times;</button>
+        </div>
+
+        <div class="sheet-tabs">
+          <button class="sheet-tab-btn active" id="tab-overview" onclick="switchSheetTab('overview')">Schedule</button>
+          <button class="sheet-tab-btn" id="tab-meds" onclick="switchSheetTab('meds')">Medicine Detail</button>
+          <button class="sheet-tab-btn" id="tab-contacts" onclick="switchSheetTab('contacts')">Contacts</button>
+          <button class="sheet-tab-btn" id="tab-boxes" onclick="switchSheetTab('boxes')">NFC Boxes</button>
+        </div>
+
+        <!-- PANEL 1: SCHEDULE -->
+        <div class="sheet-panel active" id="panel-overview">
+          <div class="panel-card">
+            <div class="panel-card-title">Today's Regimen (27 Oct)</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;" id="sheetAdherenceSummary">
+              2 of 4 taken · 1 pending · 1 upcoming
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #EEE;">
+                <div>
+                  <strong>Pantoprazole 40mg</strong>
+                  <div style="font-size:11px; color:#666;">7:30 AM · Kitchen Box tap at 7:51 AM</div>
+                </div>
+                <span style="font-size:11px; font-weight:700; color:var(--status-taken); background:var(--status-taken-bg); padding:3px 7px; border-radius:4px;">TAKEN</span>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #EEE;">
+                <div>
+                  <strong>Metformin 500mg</strong>
+                  <div style="font-size:11px; color:#666;">8:00 AM · Kitchen Box tap at 8:22 AM</div>
+                </div>
+                <span style="font-size:11px; font-weight:700; color:var(--status-taken); background:var(--status-taken-bg); padding:3px 7px; border-radius:4px;">TAKEN</span>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #EEE;" id="sheetAmlodipineRow">
+                <div>
+                  <strong>Amlodipine 5mg</strong>
+                  <div style="font-size:11px; color:var(--status-gray);" id="sheetAmlodipineText">8:00 AM · Pending morning tap</div>
+                </div>
+                <span style="font-size:11px; font-weight:600; color:var(--status-gray); background:var(--status-gray-bg); padding:3px 7px; border-radius:4px;" id="sheetAmlodipineChip">PENDING</span>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0;">
+                <div>
+                  <strong>Atorvastatin 10mg</strong>
+                  <div style="font-size:11px; color:#666;">9:00 PM · Due at bedtime</div>
+                </div>
+                <span style="font-size:11px; font-weight:600; color:var(--status-gray); background:var(--status-gray-bg); padding:3px 7px; border-radius:4px;">UPCOMING</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 2: MEDICINE DETAIL -->
+        <div class="sheet-panel" id="panel-meds">
+          <div class="panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div class="panel-card-title" id="sheetDetailName">Metformin 500mg</div>
+                <div style="font-size:12px; color:var(--primary); font-weight:600;" id="sheetDetailIndication">Blood sugar control</div>
+              </div>
+              <select style="padding:4px 8px; border-radius:6px; border:1px solid #CCC; font-size:12px; font-family:inherit;" onchange="loadMedicineDetail(this.value)">
+                <option value="metformin">Metformin 500mg</option>
+                <option value="amlodipine">Amlodipine 5mg</option>
+                <option value="pantoprazole">Pantoprazole 40mg</option>
+                <option value="atorvastatin">Atorvastatin 10mg</option>
+              </select>
+            </div>
+
+            <div style="margin-top:14px;">
+              <div style="font-size:12px; font-weight:700; margin-bottom:6px;">7-Day Adherence History</div>
+              <div style="display:flex; justify-content:space-between; gap:4px;" id="sheetAdherenceIcons"></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:10px; border-top:1px solid #EEE;">
+              <div>
+                <strong id="sheetRemainingCount">22 tablets remaining</strong>
+                <div style="font-size:11px; color:#666;" id="sheetRemainingDays">~11 days left</div>
+              </div>
+              <button style="background:none; border:1px solid var(--primary-border); color:var(--primary); padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;" onclick="showToast('Refill queued')">
+                Mark for refill
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 3: CONTACTS -->
+        <div class="sheet-panel" id="panel-contacts">
+          <div class="panel-card" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="contacts-header-row">
+              <div>
+                <div class="panel-card-title">Connected Caregivers</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">Direct ping options for all active caregivers</div>
+              </div>
+              <button class="btn-ping-all" onclick="pingAllCaregivers(this)" title="Broadcast emergency check-in to all caregivers">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Ping All</span>
+              </button>
+            </div>
+
+            <!-- 1: Anand (Son / Primary) -->
+            <div class="contact-row-item">
+              <div class="contact-avatar" style="background:#E8F4F2; color:var(--primary);">AN</div>
+              <div class="contact-info">
+                <div class="contact-name">
+                  <strong>Anand</strong>
+                  <span class="contact-role-tag">Son · Primary</span>
+                </div>
+                <div class="contact-phone">+91 98450 12345 · Family Caregiver</div>
+              </div>
+              <div class="contact-actions">
+                <button class="btn-ping-action" onclick="pingCaregiver('Anand', 'Son (Primary)', this)" title="Ping Anand">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Ping</span>
+                </button>
+                <button class="btn-call-action" onclick="callContact('Anand', '+91 98450 12345')" title="Call Anand">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>Call</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2: Meena (Neighbor / Backup) -->
+            <div class="contact-row-item">
+              <div class="contact-avatar" style="background:#F2F2F7; color:var(--status-gray);">MN</div>
+              <div class="contact-info">
+                <div class="contact-name">
+                  <strong>Meena</strong>
+                  <span class="contact-role-tag">Neighbor · Backup</span>
+                </div>
+                <div class="contact-phone">+91 98860 67890 · 2 mins away</div>
+              </div>
+              <div class="contact-actions">
+                <button class="btn-ping-action" onclick="pingCaregiver('Meena', 'Neighbor (Backup)', this)" title="Ping Meena">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Ping</span>
+                </button>
+                <button class="btn-call-action" onclick="callContact('Meena', '+91 98860 67890')" title="Call Meena">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>Call</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3: Lakshmi (Caregiver / Morning Shift) -->
+            <div class="contact-row-item">
+              <div class="contact-avatar" style="background:#EDE9FE; color:#7C3AED;">LK</div>
+              <div class="contact-info">
+                <div class="contact-name">
+                  <strong>Lakshmi</strong>
+                  <span class="contact-role-tag">Caregiver · Morning</span>
+                </div>
+                <div class="contact-phone">+91 97410 45678 · Daily Caregiver</div>
+              </div>
+              <div class="contact-actions">
+                <button class="btn-ping-action" onclick="pingCaregiver('Lakshmi', 'Caregiver (Morning)', this)" title="Ping Lakshmi">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Ping</span>
+                </button>
+                <button class="btn-call-action" onclick="callContact('Lakshmi', '+91 97410 45678')" title="Call Lakshmi">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>Call</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 4: Dr. Ravi Shankar (Geriatrician) -->
+            <div class="contact-row-item" style="border-top:1px solid #EAEAEA; padding-top:10px;">
+              <div class="contact-avatar" style="background:#EAF4EE; color:var(--status-taken);">DR</div>
+              <div class="contact-info">
+                <div class="contact-name">
+                  <strong>Dr. Ravi Shankar</strong>
+                  <span class="contact-role-tag" style="background:#EAF4EE; color:var(--status-taken);">Geriatrician</span>
+                </div>
+                <div class="contact-phone">+91 94480 11223 · Manipal Hospital</div>
+              </div>
+              <div class="contact-actions">
+                <button class="btn-ping-action" style="background:#2563EB;" onclick="pingCaregiver('Dr. Ravi Shankar', 'Geriatrician', this)" title="Ping Doctor / Clinic Desk">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span>Ping</span>
+                </button>
+                <button class="btn-call-action" onclick="callContact('Dr. Ravi Shankar', '+91 94480 11223')" title="Call Doctor">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>Call</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- PANEL 4: NFC BOXES -->
+        <div class="sheet-panel" id="panel-boxes">
+          <div class="panel-card" style="display:flex; flex-direction:column; gap:10px;">
+            <div class="panel-card-title">NFC Boxes</div>
+            <div style="background:#FAFAF8; border:1px solid #E0DEDB; border-radius:6px; padding:10px;">
+              <div style="display:flex; justify-content:space-between;">
+                <strong>Kitchen Medicine Box</strong>
+                <span style="font-size:10px; background:var(--status-taken-bg); color:var(--status-taken); padding:2px 6px; border-radius:4px; font-weight:700;">ACTIVE</span>
+              </div>
+              <div style="font-size:11px; color:#666; margin-top:2px;">Dining table · Tag: 04:A2:8B:19</div>
+            </div>
+            <div style="background:#FAFAF8; border:1px solid #E0DEDB; border-radius:6px; padding:10px;">
+              <div style="display:flex; justify-content:space-between;">
+                <strong>Bedroom Shelf Box</strong>
+                <span style="font-size:10px; background:var(--status-taken-bg); color:var(--status-taken); padding:2px 6px; border-radius:4px; font-weight:700;">ACTIVE</span>
+              </div>
+              <div style="font-size:11px; color:#666; margin-top:2px;">Bedside table · Tag: 04:C5:11:3D</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    </div><!-- /phone-container -->
+  </div><!-- /phone-wrapper -->
+
+  <!-- Friendly "How It Works" Modal for First-Time Users -->
+  <div class="how-it-works-overlay" id="howItWorksModal" onclick="closeHowItWorksOnOverlay(event)">
+    <div class="how-card">
+      <div class="how-header">
+        <div>
+          <div class="how-title">How MedPing Works</div>
+          <div class="how-subtitle">Peace of mind for family caregivers</div>
+        </div>
+        <button class="how-close-btn" onclick="closeHowItWorksModal()">&times;</button>
+      </div>
+
+      <div class="how-steps-list">
+        <div class="how-step-item">
+          <div class="how-step-badge">1</div>
+          <div class="how-step-content">
+            <strong>NFC Tag on Medicine Box</strong>
+            <p>Every pillbox in Leela's home has a waterproof NFC tag sticker — no charging or Wi-Fi needed on the box.</p>
+          </div>
+        </div>
+
+        <div class="how-step-item">
+          <div class="how-step-badge">2</div>
+          <div class="how-step-content">
+            <strong>Mom Taps When Taking Pills</strong>
+            <p>Leela simply taps the box with her phone as she takes her dose. It logs in under 1 second.</p>
+          </div>
+        </div>
+
+        <div class="how-step-item">
+          <div class="how-step-badge">3</div>
+          <div class="how-step-content">
+            <strong>Your Widget Updates Instantly</strong>
+            <p>You and your family see verified green checkmarks and exact timestamps in real time. Zero nagging calls.</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="how-got-it-btn" onclick="closeHowItWorksModal()">Got It, Show Widget</button>
+    </div>
+  </div>
+
+  <script>
+    /* -------------------------------------------------------------
+       MINIMAL WIDGET CONTROLLER
+       ------------------------------------------------------------- */
+    const widgetState = {
+      currentSlide: 0,
+      isAmlodipineTaken: false
+    };
+
+    function setWidgetMode(mode) {
+      const widget = document.getElementById('medpingWidget');
+      const btnLarge = document.getElementById('btnModeWidget');
+      const btnCompact = document.getElementById('btnModeCompact');
+
+      if (mode === 'compact') {
+        widget.classList.add('widget-compact');
+        btnCompact.classList.add('active');
+        btnLarge.classList.remove('active');
+      } else {
+        widget.classList.remove('widget-compact');
+        btnLarge.classList.add('active');
+        btnCompact.classList.remove('active');
+      }
+    }
+
+    /* -------------------------------------------------------------
+       MOBILE SLIDING / SWIPE & SLIDE CONTROLLER FOR PHONES
+       ------------------------------------------------------------- */
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchDeltaX = 0;
+    let isSwiping = false;
+    let isDragging = false;
+    let touchStartTime = 0;
+
+    function initWidgetSlider() {
+      const viewport = document.querySelector('.widget-carousel-viewport');
+      if (!viewport) return;
+
+      // Mobile Phone Touch Gestures
+      viewport.addEventListener('touchstart', onTouchStart, { passive: true });
+      viewport.addEventListener('touchmove', onTouchMove, { passive: false });
+      viewport.addEventListener('touchend', onTouchEnd, { passive: true });
+      viewport.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+      // Desktop Mouse Drag Support
+      viewport.addEventListener('mousedown', onMouseDown);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+
+      // Keyboard arrow navigation
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') prevWidgetSlide();
+        if (e.key === 'ArrowRight') nextWidgetSlide();
+      });
+    }
+
+    function onTouchStart(e) {
+      const touch = e.touches[0];
+      startSlideDrag(touch.clientX, touch.clientY);
+    }
+
+    function onTouchMove(e) {
+      if (touchStartTime === 0) return;
+      const touch = e.touches[0];
+      const isHorizontal = moveSlideDrag(touch.clientX, touch.clientY);
+      if (isHorizontal && e.cancelable) {
+        e.preventDefault(); // lock vertical page bounce while swiping widget horizontally
+      }
+    }
+
+    function onTouchEnd(e) {
+      endSlideDrag();
+    }
+
+    let isMouseDown = false;
+    function onMouseDown(e) {
+      if (e.target.closest('button')) return;
+      isMouseDown = true;
+      startSlideDrag(e.clientX, e.clientY);
+    }
+
+    function onMouseMove(e) {
+      if (!isMouseDown) return;
+      moveSlideDrag(e.clientX, e.clientY);
+    }
+
+    function onMouseUp(e) {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      endSlideDrag();
+    }
+
+    function startSlideDrag(clientX, clientY) {
+      touchStartX = clientX;
+      touchStartY = clientY;
+      touchDeltaX = 0;
+      isSwiping = false;
+      isDragging = false;
+      touchStartTime = Date.now();
+    }
+
+    function moveSlideDrag(clientX, clientY) {
+      const dx = clientX - touchStartX;
+      const dy = clientY - touchStartY;
+
+      if (!isSwiping) {
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) {
+          touchStartTime = 0; // vertical scroll: release
+          return false;
+        }
+        if (Math.abs(dx) > 7 && Math.abs(dx) > Math.abs(dy)) {
+          isSwiping = true;
+          isDragging = true;
+          const vp = document.querySelector('.widget-carousel-viewport');
+          if (vp) vp.classList.add('is-dragging');
+        }
+      }
+
+      if (isSwiping) {
+        touchDeltaX = dx;
+        // Rubber band resistance at boundaries
+        let elasticDx = dx;
+        if ((widgetState.currentSlide === 0 && dx > 0) ||
+            (widgetState.currentSlide === 2 && dx < 0)) {
+          elasticDx = dx * 0.28;
+        }
+
+        const track = document.getElementById('widgetCarouselTrack');
+        if (track) {
+          track.style.transition = 'none';
+          track.style.transform = `translateX(calc(-${widgetState.currentSlide * 33.3333}% + ${elasticDx}px))`;
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function endSlideDrag() {
+      if (!isSwiping && !isDragging) {
+        touchStartTime = 0;
+        return;
+      }
+
+      const vp = document.querySelector('.widget-carousel-viewport');
+      if (vp) vp.classList.remove('is-dragging');
+
+      const track = document.getElementById('widgetCarouselTrack');
+      if (track) {
+        track.style.transition = 'transform 0.32s cubic-bezier(0.25, 1, 0.5, 1)';
+      }
+
+      const elapsed = Date.now() - touchStartTime;
+      const velocity = Math.abs(touchDeltaX) / Math.max(elapsed, 1);
+      const threshold = 35; // minimum swipe distance
+
+      let targetSlide = widgetState.currentSlide;
+      if (touchDeltaX < -threshold || (touchDeltaX < -15 && velocity > 0.25)) {
+        if (widgetState.currentSlide < 2) targetSlide = widgetState.currentSlide + 1;
+      } else if (touchDeltaX > threshold || (touchDeltaX > 15 && velocity > 0.25)) {
+        if (widgetState.currentSlide > 0) targetSlide = widgetState.currentSlide - 1;
+      }
+
+      goToWidgetSlide(targetSlide);
+
+      setTimeout(() => {
+        isDragging = false;
+        isSwiping = false;
+        touchStartTime = 0;
+        touchDeltaX = 0;
+      }, 120);
+    }
+
+    function prevWidgetSlide() {
+      if (widgetState.currentSlide > 0) {
+        goToWidgetSlide(widgetState.currentSlide - 1);
+      }
+    }
+
+    function nextWidgetSlide() {
+      if (widgetState.currentSlide < 2) {
+        goToWidgetSlide(widgetState.currentSlide + 1);
+      }
+    }
+
+    /* 3 Clean Shifting Screens */
+    function goToWidgetSlide(slideIndex) {
+      widgetState.currentSlide = slideIndex;
+      const track = document.getElementById('widgetCarouselTrack');
+      if (track) {
+        track.style.transition = 'transform 0.32s cubic-bezier(0.25, 1, 0.5, 1)';
+        track.style.transform = `translateX(-${slideIndex * 33.3333}%)`;
+      }
+
+      const dots = document.querySelectorAll('.widget-dot');
+      dots.forEach((dot, idx) => {
+        if (idx === slideIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+
+      const btnPrev = document.getElementById('btnSlidePrev');
+      const btnNext = document.getElementById('btnSlideNext');
+      if (btnPrev) btnPrev.disabled = (slideIndex === 0);
+      if (btnNext) btnNext.disabled = (slideIndex === 2);
+    }
+
+    /* Simulation: Leela Taps Physical NFC Box */
+    function simulateAmlodipineTap() {
+      if (widgetState.isAmlodipineTaken) {
+        showToast('Amlodipine is already logged as taken.');
+        return;
+      }
+
+      widgetState.isAmlodipineTaken = true;
+
+      // Update Amlodipine compartment from Gray to Green Taken
+      const cell = document.getElementById('widgetAmlodipineCell');
+      const graphic = document.getElementById('widgetAmlodipineGraphic');
+      const statusText = document.getElementById('widgetAmlodipineStatus');
+
+      cell.className = 'pillbox-cell cell-taken';
+      graphic.className = 'cell-pill-graphic taken';
+      graphic.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      statusText.className = 'cell-tap-status taken';
+      statusText.innerText = '9:48 AM';
+
+      // Update minimal header ratio badge
+      document.getElementById('widgetRatioBadge').innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg><span>3 of 4 taken</span>';
+
+      // Update adherence progress track to 75%
+      const progressFill = document.getElementById('adherenceProgressFill');
+      if (progressFill) progressFill.style.width = '75%';
+
+      // Update footer next dose
+      document.getElementById('footerNextText').innerText = 'Next: Atorvastatin at 9:00 PM';
+
+      // Update radar slide
+      document.getElementById('radarLastTap').innerText = 'Last logged: 9:48 AM · Amlodipine';
+
+      // Update sheet
+      document.getElementById('sheetAmlodipineChip').className = 'cell-tap-status taken';
+      document.getElementById('sheetAmlodipineChip').innerText = 'TAKEN';
+      document.getElementById('sheetAmlodipineChip').style.color = 'var(--status-taken)';
+      document.getElementById('sheetAmlodipineChip').style.background = 'var(--status-taken-bg)';
+      document.getElementById('sheetAmlodipineText').innerText = '8:00 AM · Logged at 9:48 AM';
+
+      const btn = document.getElementById('simTapAmlodipineBtn');
+      if (btn) {
+        btn.classList.add('active-sim');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>✓ Amlodipine Logged</span>';
+      }
+
+      showToast('NFC Tag read: Amlodipine logged at 9:48 AM');
+    }
+
+    /* Reset */
+    function resetPrototypeScenario() {
+      widgetState.isAmlodipineTaken = false;
+
+      const cell = document.getElementById('widgetAmlodipineCell');
+      const graphic = document.getElementById('widgetAmlodipineGraphic');
+      const statusText = document.getElementById('widgetAmlodipineStatus');
+
+      cell.className = 'pillbox-cell cell-gray';
+      graphic.className = 'cell-pill-graphic gray';
+      graphic.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+      statusText.className = 'cell-tap-status gray';
+      statusText.innerText = 'Pending';
+
+      document.getElementById('widgetRatioBadge').innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg><span>2 of 4 taken</span>';
+
+      const progressFill = document.getElementById('adherenceProgressFill');
+      if (progressFill) progressFill.style.width = '50%';
+
+      document.getElementById('footerNextText').innerText = 'Next: Atorvastatin at 9:00 PM';
+      document.getElementById('radarLastTap').innerText = 'Last logged: 8:22 AM · Metformin';
+
+      const btn = document.getElementById('simTapAmlodipineBtn');
+      if (btn) {
+        btn.classList.remove('active-sim');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>Simulate NFC Tap (Mom takes pill)</span>';
+      }
+
+      goToWidgetSlide(0);
+      showToast('Reset to 9:47 AM morning state');
+    }
+
+    /* "How It Works" First-Time User Modal */
+    function openHowItWorksModal() {
+      const modal = document.getElementById('howItWorksModal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeHowItWorksModal() {
+      const modal = document.getElementById('howItWorksModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function closeHowItWorksOnOverlay(e) {
+      if (e.target.id === 'howItWorksModal') {
+        closeHowItWorksModal();
+      }
+    }
+
+    /* Caregiver Ping & Emergency Communication Functions */
+    function pingCaregiver(name, role, btnElement) {
+      if (btnElement) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = `<span>✓ Sent</span>`;
+        btnElement.style.background = '#2E7D52';
+        setTimeout(() => {
+          btnElement.innerHTML = originalHtml;
+          btnElement.style.background = '';
+        }, 2000);
+      }
+      showToast(`🔔 Ping sent to ${name} (${role}): "Check in with Leela"`);
+    }
+
+    function pingAllCaregivers(btnElement) {
+      if (btnElement) {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = `<span>✓ All Pinged!</span>`;
+        btnElement.style.background = '#256643';
+        setTimeout(() => {
+          btnElement.innerHTML = originalHtml;
+          btnElement.style.background = '';
+        }, 2200);
+      }
+      showToast('🔔 Emergency Alert ping broadcast to Anand, Meena & Lakshmi!');
+    }
+
+    function callContact(name, phone) {
+      showToast(`📞 Dialing ${name} (${phone})...`);
+    }
+
+    /* Check-in Message */
+    function quickNotifyMeena() {
+      pingCaregiver('Meena', 'Neighbor (Backup)');
+    }
+
+    /* Modal Sheet Controls */
+    function openExpandedModal(tab, medKey) {
+      if (isDragging) return; // Prevent modal popup when swiping on phone
+      document.getElementById('expandedModal').classList.add('open');
+      if (tab) switchSheetTab(tab);
+      if (medKey) loadMedicineDetail(medKey);
+    }
+
+    function closeExpandedModal() {
+      document.getElementById('expandedModal').classList.remove('open');
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.id === 'expandedModal') {
+        closeExpandedModal();
+      }
+    }
+
+    function switchSheetTab(tabId) {
+      document.querySelectorAll('.sheet-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.sheet-panel').forEach(panel => panel.classList.remove('active'));
+
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      const activePanel = document.getElementById(`panel-${tabId}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      if (activePanel) activePanel.classList.add('active');
+    }
+
+    function loadMedicineDetail(medKey) {
+      const names = {
+        metformin: 'Metformin 500mg',
+        amlodipine: 'Amlodipine 5mg',
+        pantoprazole: 'Pantoprazole 40mg',
+        atorvastatin: 'Atorvastatin 10mg'
+      };
+      const indications = {
+        metformin: 'Blood sugar control',
+        amlodipine: 'Blood pressure regulation',
+        pantoprazole: 'Acidity & gastro-protection',
+        atorvastatin: 'Cholesterol management'
+      };
+      const counts = {
+        metformin: '22 tablets remaining (~11 days left)',
+        amlodipine: '6 tablets remaining (~6 days left)',
+        pantoprazole: '30 tablets remaining (~30 days left)',
+        atorvastatin: '18 tablets remaining (~18 days left)'
+      };
+
+      document.getElementById('sheetDetailName').innerText = names[medKey] || medKey;
+      document.getElementById('sheetDetailIndication').innerText = indications[medKey] || '';
+      document.getElementById('sheetRemainingCount').innerText = counts[medKey] || '';
+
+      const container = document.getElementById('sheetAdherenceIcons');
+      container.innerHTML = '';
+      const days = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Today'];
+      days.forEach((day, i) => {
+        const isToday = i === 6;
+        let color = '#2E7D52';
+        let bg = '#EAF4EE';
+        let symbol = '✓';
+
+        if (medKey === 'amlodipine' && isToday && !widgetState.isAmlodipineTaken) {
+          color = '#8E8E93';
+          bg = '#F2F2F7';
+          symbol = '—';
+        }
+
+        const div = document.createElement('div');
+        div.style.cssText = `flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:${bg}; color:${color}; font-size:11px; font-weight:700;`;
+        div.innerHTML = `<div>${day}</div><div style="font-size:13px; margin-top:2px;">${symbol}</div>`;
+        container.appendChild(div);
+      });
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('globalToast');
+      const text = document.getElementById('toastMessage');
+      text.innerText = msg;
+      toast.classList.add('visible');
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2500);
+    }
+
+    /* Change iPhone Wallpaper Preset */
+    function changeWallpaper(preset) {
+      const container = document.getElementById('phoneContainer');
+      container.classList.remove('wp-navy', 'wp-astronomy', 'wp-titanium', 'wp-classic-blue');
+      container.classList.add(preset);
+      const names = {
+        'wp-navy': 'iOS Stock Navy',
+        'wp-astronomy': 'iOS Astronomy',
+        'wp-titanium': 'iOS Dark Titanium',
+        'wp-classic-blue': 'iOS Classic Cobalt'
+      };
+      showToast('Wallpaper: ' + (names[preset] || preset));
+    }
+
+    // Init
+    loadMedicineDetail('metformin');
+    initWidgetSlider();
+  </script>
+
+</body>
+</html>
